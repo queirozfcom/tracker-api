@@ -21,21 +21,6 @@ type Service interface {
 	//DeleteAddress(ctx context.Context, profileID string, addressID string) error
 }
 
-// Profile represents a single user profile.
-// ID should be globally unique.
-type Profile struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name,omitempty"`
-	Addresses []Address `json:"addresses,omitempty"`
-}
-
-// Address is a field of a user profile.
-// ID should be unique within the profile (at a minimum).
-type Address struct {
-	ID       string `json:"id"`
-	Location string `json:"location,omitempty"`
-}
-
 var (
 	ErrInconsistentIDs = errors.New("inconsistent IDs")
 	ErrAlreadyExists   = errors.New("already exists")
@@ -59,16 +44,13 @@ func (s *inmemService) GetWatchedRepos(ctx context.Context, username string) ([]
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
 
-	dummyrepo, _, err := s.ghClient.Repositories.Get(ctx, "golang", "golang")
+	dummyrepo, _, err := s.ghClient.Repositories.Get(ctx, "golang", "go")
 
-	if err != nil{
+	if err != nil {
 		return []github.Repository{}, err
 	} else {
 		return []github.Repository{*dummyrepo}, err
 	}
-
-
-
 
 }
 

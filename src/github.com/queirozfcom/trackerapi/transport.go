@@ -59,22 +59,6 @@ func MakeHTTPHandler(s Service, logger log.Logger) http.Handler {
 	return r
 }
 
-func decodePostProfileRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
-	var req postProfileRequest
-	if e := json.NewDecoder(r.Body).Decode(&req.Profile); e != nil {
-		return nil, e
-	}
-	return req, nil
-}
-
-func encodeGetProfileRequest(ctx context.Context, req *http.Request, request interface{}) error {
-	// r.Methods("GET").Path("/profiles/{id}")
-	r := request.(getProfileRequest)
-	profileID := url.QueryEscape(r.ID)
-	req.Method, req.URL.Path = "GET", "/profiles/"+profileID
-	return encodeRequest(ctx, req, request)
-}
-
 func decodeWatchedReposRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	vars := mux.Vars(r)
 	username, ok := vars["username"]
@@ -96,21 +80,6 @@ func decodeWatchedReposResponse(_ context.Context, resp *http.Response) (interfa
 	err := json.NewDecoder(resp.Body).Decode(&response)
 	return response, err
 
-}
-
-func decodeGetProfileRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
-	vars := mux.Vars(r)
-	id, ok := vars["id"]
-	if !ok {
-		return nil, ErrBadRouting
-	}
-	return getProfileRequest{ID: id}, nil
-}
-
-func encodePostProfileRequest(ctx context.Context, req *http.Request, request interface{}) error {
-	// r.Methods("POST").Path("/profiles/")
-	req.Method, req.URL.Path = "POST", "/profiles/"
-	return encodeRequest(ctx, req, request)
 }
 
 // errorer is implemented by all concrete response types that may contain

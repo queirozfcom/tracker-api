@@ -33,17 +33,3 @@ func (mw loggingMiddleware) GetWatchedRepos(ctx context.Context, username string
 
 	return mw.next.GetWatchedRepos(ctx, username)
 }
-
-//func (mw loggingMiddleware) PostProfile(ctx context.Context, p Profile) (err error) {
-//	defer func(begin time.Time) {
-//		mw.logger.Log("method", "PostProfile", "id", p.ID, "took", time.Since(begin), "err", err)
-//	}(time.Now())
-//	return mw.next.PostProfile(ctx, p)
-//}
-//
-//func (mw loggingMiddleware) GetProfile(ctx context.Context, id string) (p Profile, err error) {
-//	defer func(begin time.Time) {
-//		mw.logger.Log("method", "GetProfile", "id", id, "took", time.Since(begin), "err", err)
-//	}(time.Now())
-//	return mw.next.GetProfile(ctx, id)
-//}
