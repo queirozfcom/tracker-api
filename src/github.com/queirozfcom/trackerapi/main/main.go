@@ -8,7 +8,10 @@ import (
 	"os/signal"
 	"syscall"
 	"../../trackerapi"
+	"golang.org/x/oauth2"
 	"github.com/go-kit/kit/log"
+	"github.com/google/go-github/github"
+	"golang.org/x/net/context"
 )
 
 func main() {
@@ -16,6 +19,24 @@ func main() {
 		httpAddr = flag.String("http.addr", ":8080", "HTTP listen address")
 	)
 	flag.Parse()
+
+	tok,exists := os.LookupEnv("GITHUB_TOKEN")
+
+	if ! exists {
+		panic("need a github token")
+	}
+
+	fmt.Println("TOKEN IS: "+ tok)
+
+	ctx := context.Background()
+
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: tok},
+	)
+
+	tc := oauth2.NewClient(ctx,ts)
+
+	githubClient := github.NewClient(tc)
 
 	var logger log.Logger
 	{
@@ -26,7 +47,7 @@ func main() {
 
 	var s trackerapi.Service
 	{
-		s = trackerapi.NewInmemService()
+		s = trackerapi.NewInmemService(*githubClient)
 		s = trackerapi.LoggingMiddleware(logger)(s)
 	}
 
