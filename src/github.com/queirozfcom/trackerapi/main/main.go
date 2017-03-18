@@ -26,17 +26,23 @@ func main() {
 		panic("need a github token")
 	}
 
-	fmt.Println("TOKEN IS: "+ tok)
 
 	ctx := context.Background()
 
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: tok},
+		&oauth2.Token{AccessToken: tok, TokenType: "Basic"},
 	)
 
 	tc := oauth2.NewClient(ctx,ts)
 
 	githubClient := github.NewClient(tc)
+
+
+	repos, _, err := githubClient.Repositories.List(ctx, "", nil)
+
+	fmt.Println(tok)
+	fmt.Println(repos)
+	fmt.Println(err)
 
 	var logger log.Logger
 	{
