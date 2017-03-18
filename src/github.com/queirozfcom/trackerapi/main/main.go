@@ -7,8 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/go-kit/kit/examples/profilesvc"
+	"../../trackerapi"
 	"github.com/go-kit/kit/log"
 )
 
@@ -25,15 +24,15 @@ func main() {
 		logger = log.With(logger, "caller", log.DefaultCaller)
 	}
 
-	var s profilesvc.Service
+	var s trackerapi.Service
 	{
-		s = profilesvc.NewInmemService()
-		s = profilesvc.LoggingMiddleware(logger)(s)
+		s = trackerapi.NewInmemService()
+		s = trackerapi.LoggingMiddleware(logger)(s)
 	}
 
 	var h http.Handler
 	{
-		h = profilesvc.MakeHTTPHandler(s, log.With(logger, "component", "HTTP"))
+		h = trackerapi.MakeHTTPHandler(s, log.With(logger, "component", "HTTP"))
 	}
 
 	errs := make(chan error)

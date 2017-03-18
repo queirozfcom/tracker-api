@@ -1,4 +1,5 @@
-package profilesvc
+package trackerapi
+
 
 import (
 	"context"
@@ -24,6 +25,7 @@ import (
 // construct individual endpoints using transport/http.NewClient, combine them
 // into an Endpoints, and return it to the caller as a Service.
 type Endpoints struct {
+	GetWatchedRepos       endpoint.Endpoint
 	PostProfileEndpoint   endpoint.Endpoint
 	GetProfileEndpoint    endpoint.Endpoint
 	PutProfileEndpoint    endpoint.Endpoint
@@ -40,6 +42,7 @@ type Endpoints struct {
 // server.
 func MakeServerEndpoints(s Service) Endpoints {
 	return Endpoints{
+		GetWatchedRepos:       MakeGetWatchedReposEndpoint(s),
 		PostProfileEndpoint:   MakePostProfileEndpoint(s),
 		GetProfileEndpoint:    MakeGetProfileEndpoint(s),
 		PutProfileEndpoint:    MakePutProfileEndpoint(s),
@@ -182,6 +185,13 @@ func (e Endpoints) DeleteAddress(ctx context.Context, profileID string, addressI
 	resp := response.(deleteAddressResponse)
 	return resp.Err
 }
+
+func MakeGetWatchedReposEndpoint(s Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(postProfileRequest)
+		e := s.PostProfile(ctx, req.Profile)
+		return postProfileResponse{Err: e}, nil
+	}}
 
 // MakePostProfileEndpoint returns an endpoint via the passed service.
 // Primarily useful in a server.
