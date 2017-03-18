@@ -44,7 +44,7 @@ func (s *inmemService) GetWatchedRepos(ctx context.Context, username string) ([]
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
 
-	dummyrepo, _, err := s.ghClient.Repositories.Get(ctx, "golang", "go")
+	dummyrepo, _, err := s.ghClient.Repositories.Get(context.Background(), "golang", "go")
 
 	if err != nil {
 		return []github.Repository{}, err
