@@ -33,3 +33,11 @@ func (mw loggingMiddleware) GetWatchedRepos(ctx context.Context, username string
 
 	return mw.next.GetWatchedRepos(ctx, username)
 }
+func (mw loggingMiddleware) GetMyWatchedRepos(ctx context.Context) ([]interface{}, error) {
+
+	defer func(begin time.Time) {
+		mw.logger.Log("method", "GetMyWatchedRepos", "took", time.Since(begin))
+	}(time.Now())
+
+	return mw.next.GetMyWatchedRepos(ctx)
+}

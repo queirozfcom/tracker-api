@@ -9,6 +9,7 @@ import (
 
 type Endpoints struct {
 	GetWatchedReposEndpoint endpoint.Endpoint
+	GetMyWatchedReposEndpoint endpoint.Endpoint
 }
 
 // MakeServerEndpoints returns an Endpoints struct where each endpoint invokes
@@ -17,6 +18,7 @@ type Endpoints struct {
 func MakeServerEndpoints(s Service) Endpoints {
 	return Endpoints{
 		GetWatchedReposEndpoint: MakeGetWatchedReposEndpoint(s),
+		GetMyWatchedReposEndpoint : MakeGetMyWatchedReposEndpoint(s),
 	}
 }
 //
@@ -56,11 +58,31 @@ func (e Endpoints) GetWatchedRepos(ctx context.Context, username string) ([]gith
 	return resp.Repos, resp.Err
 }
 
+func (e Endpoints) GetMyWatchedRepos(ctx context.Context, username string) ([]interface{}, error) {
+	request := getWatchedReposRequest{Username: username}
+	response, err := e.GetWatchedReposEndpoint(ctx, request)
+	if err != nil {
+		return []interface{}{}, err
+	}
+
+	resp := response.(getMyWatchedReposResponse)
+
+	return resp.Repos, resp.Err
+}
+
 func MakeGetWatchedReposEndpoint(s Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(getWatchedReposRequest)
 		repos, e := s.GetWatchedRepos(ctx, req.Username)
 		return getWatchedReposResponse{Repos: repos, Err: e}, nil
+	}
+}
+
+func MakeGetMyWatchedReposEndpoint(s Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		//req := request.(getMyWatchedReposRequest)
+		repos, e := s.GetMyWatchedRepos(ctx)
+		return getMyWatchedReposResponse{Repos: repos, Err: e}, nil
 	}
 }
 
@@ -83,8 +105,17 @@ type getWatchedReposRequest struct {
 	Username string
 }
 
+type getMyWatchedReposRequest struct {
+	Fields []string
+}
+
 type getWatchedReposResponse struct {
 	Repos []github.Repository `json:"repos,omitempty"`
+	Err   error `json:"err,omitempty"`
+}
+
+type getMyWatchedReposResponse struct {
+	Repos []interface{} `json:"repos,omitempty"`
 	Err   error `json:"err,omitempty"`
 }
 

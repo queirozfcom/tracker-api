@@ -38,12 +38,6 @@ func main() {
 	githubClient := github.NewClient(tc)
 
 
-	repos, _, err := githubClient.Repositories.List(ctx, "", nil)
-
-	fmt.Println(tok)
-	fmt.Println(repos)
-	fmt.Println(err)
-
 	var logger log.Logger
 	{
 		logger = log.NewLogfmtLogger(os.Stderr)

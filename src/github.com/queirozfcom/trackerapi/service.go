@@ -5,11 +5,14 @@ import (
 	"errors"
 	"sync"
 	"github.com/google/go-github/github"
+	//"fmt"
+	//"os/user"
 )
 
 // Service is a simple CRUD interface for user profiles.
 type Service interface {
 	GetWatchedRepos(ctx context.Context, username string) ([]github.Repository, error)
+	GetMyWatchedRepos(ctx context.Context) ([]interface{}, error)
 	//PostProfile(ctx context.Context, p Profile) error
 	//GetProfile(ctx context.Context, id string) (Profile, error)
 	//PutProfile(ctx context.Context, id string, p Profile) error
@@ -29,13 +32,13 @@ var (
 
 type inmemService struct {
 	mtx      sync.RWMutex
-	m        map[string][]github.Repository
+	m        map[string][]interface{}
 	ghClient github.Client
 }
 
 func NewInmemService(ghClient github.Client) Service {
 	return &inmemService{
-		m:        map[string][]github.Repository{},
+		m:        map[string][]interface{}{},
 		ghClient: ghClient,
 	}
 }
@@ -44,13 +47,57 @@ func (s *inmemService) GetWatchedRepos(ctx context.Context, username string) ([]
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
 
-	dummyrepo, _, err := s.ghClient.Repositories.Get(ctx, "golang", "go")
+	opt := &github.ListOptions{PerPage: 20}
 
-	if err != nil {
-		return []github.Repository{}, err
-	} else {
-		return []github.Repository{*dummyrepo}, err
+	var allRepos []github.Repository
+
+	for {
+		repos, resp, err := s.ghClient.Activity.ListWatched(ctx, "", opt)
+
+		if err != nil {
+			return []github.Repository{}, err
+		}
+
+		for _, element := range repos {
+			allRepos = append(allRepos, *element)
+		}
+
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
 	}
+
+	return allRepos, nil
+
+}
+
+func (s *inmemService) GetMyWatchedRepos(ctx context.Context) ([]interface{}, error) {
+	s.mtx.RLock()
+	defer s.mtx.RUnlock()
+
+	opt := &github.ListOptions{PerPage: 20}
+
+	var allRepos []interface{}
+
+	for {
+		repos, resp, err := s.ghClient.Activity.ListWatched(ctx, "", opt)
+
+		if err != nil {
+			return []interface{}{}, err
+		}
+
+		for _, element := range repos {
+			allRepos = append(allRepos, *element.FullName)
+		}
+
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
+	}
+
+	return allRepos, nil
 
 }
 

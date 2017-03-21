@@ -9,12 +9,13 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"net/url"
+	//"net/url"
 
 	"github.com/gorilla/mux"
 
 	"github.com/go-kit/kit/log"
 	httptransport "github.com/go-kit/kit/transport/http"
+	"fmt"
 )
 
 var (
@@ -40,6 +41,13 @@ func MakeHTTPHandler(s Service, logger log.Logger) http.Handler {
 		options...
 	))
 
+	r.Methods("GET").Path("/watched").Handler(httptransport.NewServer(
+		e.GetMyWatchedReposEndpoint,
+		decodeMyWatchedReposRequest,
+		encodeResponse,
+		options...
+	))
+
 	/*
 
 	r.Methods("POST").Path("/profiles/").Handler(httptransport.NewServer(
@@ -61,26 +69,40 @@ func MakeHTTPHandler(s Service, logger log.Logger) http.Handler {
 
 func decodeWatchedReposRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	vars := mux.Vars(r)
+
 	username, ok := vars["username"]
 	if !ok {
 		return nil, ErrBadRouting
 	}
 	return getWatchedReposRequest{Username: username}, nil
 }
+func decodeMyWatchedReposRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	vars := mux.Vars(r)
 
-func encodeWatchedReposRequest(ctx context.Context, req *http.Request, request interface{}) error {
-	r := request.(getWatchedReposRequest)
-	username := url.QueryEscape(r.Username)
-	req.Method, req.URL.Path = "GET", "/"+username+"/watched"
-	return encodeRequest(ctx, req, request)
+	//url,_ := url.Parse(r.RequestURI)
+
+	//fmt.Println(url.Query())
+	fmt.Println(vars)
+
+	return getMyWatchedReposRequest{}, nil
 }
 
-func decodeWatchedReposResponse(_ context.Context, resp *http.Response) (interface{}, error) {
-	var response getWatchedReposResponse
-	err := json.NewDecoder(resp.Body).Decode(&response)
-	return response, err
-
-}
+//func encodeWatchedReposRequest(ctx context.Context, req *http.Request, request interface{}) error {
+//	r := request.(getWatchedReposRequest)
+//	username := url.QueryEscape(r.Username)
+//	req.Method, req.URL.Path = "GET", "/"+username+"/watched"
+//	return encodeRequest(ctx, req, request)
+//}
+//
+//func decodeWatchedReposResponse(_ context.Context, resp *http.Response) (interface{}, error) {
+//	var response getWatchedReposResponse
+//	err := json.NewDecoder(resp.Body).Decode(&response)
+//
+//	out, _ := json.Marshal(resp.Body)
+//
+//	return string(out), err
+//
+//}
 
 // errorer is implemented by all concrete response types that may contain
 // errors. It allows us to change the HTTP response code without needing to
@@ -102,7 +124,13 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 		return nil
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	return json.NewEncoder(w).Encode(response)
+	//return json.NewEncoder(w).Encode(response)
+
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "    ")
+
+	return enc.Encode(response)
+
 }
 
 // encodeRequest likewise JSON-encodes the request to the HTTP request body.
