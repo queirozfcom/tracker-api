@@ -4,12 +4,13 @@ import (
 	"context"
 
 	"github.com/go-kit/kit/endpoint"
-	"github.com/google/go-github/github"
 )
 
 type Endpoints struct {
-	GetWatchedReposEndpoint endpoint.Endpoint
+	GetWatchedReposEndpoint   endpoint.Endpoint
 	GetMyWatchedReposEndpoint endpoint.Endpoint
+	GetStarredReposEndpoint   endpoint.Endpoint
+	GetMyStarredReposEndpoint endpoint.Endpoint
 }
 
 // MakeServerEndpoints returns an Endpoints struct where each endpoint invokes
@@ -17,10 +18,13 @@ type Endpoints struct {
 // server.
 func MakeServerEndpoints(s Service) Endpoints {
 	return Endpoints{
-		GetWatchedReposEndpoint: MakeGetWatchedReposEndpoint(s),
-		GetMyWatchedReposEndpoint : MakeGetMyWatchedReposEndpoint(s),
+		GetWatchedReposEndpoint:   MakeGetWatchedReposEndpoint(s),
+		GetMyWatchedReposEndpoint: MakeGetMyWatchedReposEndpoint(s),
+		GetStarredReposEndpoint:   MakeGetStarredReposEndpoint(s),
+		GetMyStarredReposEndpoint: MakeGetMyStarredReposEndpoint(s),
 	}
 }
+
 //
 //// MakeClientEndpoints returns an Endpoints struct where each endpoint invokes
 //// the corresponding method on the remote instance, via a transport/http.Client.
@@ -46,43 +50,57 @@ func MakeServerEndpoints(s Service) Endpoints {
 //	}, nil
 //}
 
-func (e Endpoints) GetWatchedRepos(ctx context.Context, username string) ([]github.Repository, error) {
-	request := getWatchedReposRequest{Username: username}
+func (e Endpoints) GetWatchedRepos(ctx context.Context, username string) ([]RepoInformation, error) {
+	request := getReposRequest{Username: username}
 	response, err := e.GetWatchedReposEndpoint(ctx, request)
 	if err != nil {
-		return []github.Repository{}, err
+		return []RepoInformation{}, err
 	}
 
-	resp := response.(getWatchedReposResponse)
+	resp := response.(getReposResponse)
 
 	return resp.Repos, resp.Err
 }
 
-func (e Endpoints) GetMyWatchedRepos(ctx context.Context, username string) ([]interface{}, error) {
-	request := getWatchedReposRequest{Username: username}
-	response, err := e.GetWatchedReposEndpoint(ctx, request)
+func (e Endpoints) GetStarredRepos(ctx context.Context, username string) ([]RepoInformation, error) {
+	request := getReposRequest{Username: username}
+	response, err := e.GetStarredReposEndpoint(ctx, request)
 	if err != nil {
-		return []interface{}{}, err
+		return []RepoInformation{}, err
 	}
 
-	resp := response.(getMyWatchedReposResponse)
+	resp := response.(getReposResponse)
 
 	return resp.Repos, resp.Err
 }
 
 func MakeGetWatchedReposEndpoint(s Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(getWatchedReposRequest)
+		req := request.(getReposRequest)
 		repos, e := s.GetWatchedRepos(ctx, req.Username)
-		return getWatchedReposResponse{Repos: repos, Err: e}, nil
+		return getReposResponse{Repos: repos, Err: e}, nil
 	}
 }
 
 func MakeGetMyWatchedReposEndpoint(s Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		//req := request.(getMyWatchedReposRequest)
-		repos, e := s.GetMyWatchedRepos(ctx)
-		return getMyWatchedReposResponse{Repos: repos, Err: e}, nil
+		repos, e := s.GetWatchedRepos(ctx, "")
+		return getReposResponse{Repos: repos, Err: e}, nil
+	}
+}
+
+func MakeGetStarredReposEndpoint(s Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(getReposRequest)
+		repos, e := s.GetStarredRepos(ctx, req.Username)
+		return getReposResponse{Repos: repos, Err: e}, nil
+	}
+}
+
+func MakeGetMyStarredReposEndpoint(s Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		repos, e := s.GetStarredRepos(ctx, "")
+		return getReposResponse{Repos: repos, Err: e}, nil
 	}
 }
 
@@ -101,22 +119,14 @@ func MakeGetMyWatchedReposEndpoint(s Service) endpoint.Endpoint {
 // Response types that may contain business-logic errors implement that
 // interface.
 
-type getWatchedReposRequest struct {
+type getReposRequest struct {
 	Username string
+	Fields   []string
 }
 
-type getMyWatchedReposRequest struct {
-	Fields []string
-}
-
-type getWatchedReposResponse struct {
-	Repos []github.Repository `json:"repos,omitempty"`
+type getReposResponse struct {
+	Repos []RepoInformation `json:"repos,omitempty"`
 	Err   error `json:"err,omitempty"`
 }
 
-type getMyWatchedReposResponse struct {
-	Repos []interface{} `json:"repos,omitempty"`
-	Err   error `json:"err,omitempty"`
-}
-
-func (r getWatchedReposResponse) error() error { return r.Err }
+func (r getReposResponse) error() error { return r.Err }

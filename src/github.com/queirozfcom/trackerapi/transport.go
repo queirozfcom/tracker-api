@@ -15,7 +15,6 @@ import (
 
 	"github.com/go-kit/kit/log"
 	httptransport "github.com/go-kit/kit/transport/http"
-	"fmt"
 )
 
 var (
@@ -36,18 +35,30 @@ func MakeHTTPHandler(s Service, logger log.Logger) http.Handler {
 
 	r.Methods("GET").Path("/{username}/watched").Handler(httptransport.NewServer(
 		e.GetWatchedReposEndpoint,
-		decodeWatchedReposRequest,
+		decodeReposRequest,
 		encodeResponse,
 		options...
 	))
 
 	r.Methods("GET").Path("/watched").Handler(httptransport.NewServer(
 		e.GetMyWatchedReposEndpoint,
-		decodeMyWatchedReposRequest,
+		decodeMyReposRequest,
+		encodeResponse,
+		options...
+	))
+	r.Methods("GET").Path("/{username}/starred").Handler(httptransport.NewServer(
+		e.GetStarredReposEndpoint,
+		decodeReposRequest,
 		encodeResponse,
 		options...
 	))
 
+	r.Methods("GET").Path("/starred").Handler(httptransport.NewServer(
+		e.GetMyStarredReposEndpoint,
+		decodeMyReposRequest,
+		encodeResponse,
+		options...
+	))
 	/*
 
 	r.Methods("POST").Path("/profiles/").Handler(httptransport.NewServer(
@@ -67,24 +78,17 @@ func MakeHTTPHandler(s Service, logger log.Logger) http.Handler {
 	return r
 }
 
-func decodeWatchedReposRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeReposRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	vars := mux.Vars(r)
 
 	username, ok := vars["username"]
 	if !ok {
 		return nil, ErrBadRouting
 	}
-	return getWatchedReposRequest{Username: username}, nil
+	return getReposRequest{Username: username}, nil
 }
-func decodeMyWatchedReposRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	vars := mux.Vars(r)
-
-	//url,_ := url.Parse(r.RequestURI)
-
-	//fmt.Println(url.Query())
-	fmt.Println(vars)
-
-	return getMyWatchedReposRequest{}, nil
+func decodeMyReposRequest(_ context.Context, _ *http.Request) (interface{}, error) {
+	return getReposRequest{Username: ""}, nil
 }
 
 //func encodeWatchedReposRequest(ctx context.Context, req *http.Request, request interface{}) error {

@@ -11,32 +11,40 @@ import (
 	"golang.org/x/oauth2"
 	"github.com/go-kit/kit/log"
 	"github.com/google/go-github/github"
-	"golang.org/x/net/context"
+	"github.com/gregjones/httpcache"
+	"github.com/die-net/lrucache"
 )
 
 func main() {
+
+	var transport http.RoundTripper
+
 	var (
 		httpAddr = flag.String("http.addr", ":8080", "HTTP listen address")
 	)
 	flag.Parse()
 
-	tok,exists := os.LookupEnv("GITHUB_TOKEN")
+	tok, exists := os.LookupEnv("GITHUB_TOKEN")
 
 	if ! exists {
 		panic("need a github token")
 	}
 
+	// GitHub API authentication.
+	transport = &oauth2.Transport{
+		Source: oauth2.StaticTokenSource(&oauth2.Token{AccessToken: tok, TokenType: "Basic"}),
+	}
 
-	ctx := context.Background()
+	// Memory caching.
+	transport = &httpcache.Transport{
+		Transport:           transport,
+		Cache:               lrucache.New(100000000, 21000),
+		MarkCachedResponses: true,
+	}
 
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: tok, TokenType: "Basic"},
-	)
+	httpClient := &http.Client{Transport: transport}
 
-	tc := oauth2.NewClient(ctx,ts)
-
-	githubClient := github.NewClient(tc)
-
+	githubClient := github.NewClient(httpClient)
 
 	var logger log.Logger
 	{

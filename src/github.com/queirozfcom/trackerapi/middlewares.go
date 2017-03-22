@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log"
-	"github.com/google/go-github/github"
 )
 
 // Middleware describes a service (as opposed to endpoint) middleware.
@@ -25,7 +24,7 @@ type loggingMiddleware struct {
 	logger log.Logger
 }
 
-func (mw loggingMiddleware) GetWatchedRepos(ctx context.Context, username string) ([]github.Repository, error) {
+func (mw loggingMiddleware) GetWatchedRepos(ctx context.Context, username string) ([]RepoInformation, error) {
 
 	defer func(begin time.Time) {
 		mw.logger.Log("method", "GetWatchedRepos", "username", username, "took", time.Since(begin))
@@ -33,11 +32,12 @@ func (mw loggingMiddleware) GetWatchedRepos(ctx context.Context, username string
 
 	return mw.next.GetWatchedRepos(ctx, username)
 }
-func (mw loggingMiddleware) GetMyWatchedRepos(ctx context.Context) ([]interface{}, error) {
+
+func (mw loggingMiddleware) GetStarredRepos(ctx context.Context, username string) ([]RepoInformation, error) {
 
 	defer func(begin time.Time) {
-		mw.logger.Log("method", "GetMyWatchedRepos", "took", time.Since(begin))
+		mw.logger.Log("method", "GetStarredRepos", "username", username, "took", time.Since(begin))
 	}(time.Now())
 
-	return mw.next.GetMyWatchedRepos(ctx)
+	return mw.next.GetStarredRepos(ctx, username)
 }

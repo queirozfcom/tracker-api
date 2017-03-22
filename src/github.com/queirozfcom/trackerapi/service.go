@@ -5,14 +5,13 @@ import (
 	"errors"
 	"sync"
 	"github.com/google/go-github/github"
-	//"fmt"
-	//"os/user"
 )
 
 // Service is a simple CRUD interface for user profiles.
 type Service interface {
-	GetWatchedRepos(ctx context.Context, username string) ([]github.Repository, error)
-	GetMyWatchedRepos(ctx context.Context) ([]interface{}, error)
+	GetWatchedRepos(ctx context.Context, username string) ([]RepoInformation, error)
+	GetStarredRepos(ctx context.Context, username string) ([]RepoInformation, error)
+	//GetMyWatchedRepos(ctx context.Context) ([]interface{}, error)
 	//PostProfile(ctx context.Context, p Profile) error
 	//GetProfile(ctx context.Context, id string) (Profile, error)
 	//PutProfile(ctx context.Context, id string, p Profile) error
@@ -24,6 +23,10 @@ type Service interface {
 	//DeleteAddress(ctx context.Context, profileID string, addressID string) error
 }
 
+type RepoInformation struct {
+	FullName string
+}
+
 var (
 	ErrInconsistentIDs = errors.New("inconsistent IDs")
 	ErrAlreadyExists   = errors.New("already exists")
@@ -32,34 +35,35 @@ var (
 
 type inmemService struct {
 	mtx      sync.RWMutex
-	m        map[string][]interface{}
+	m        map[string](map[string]string)
 	ghClient github.Client
 }
 
 func NewInmemService(ghClient github.Client) Service {
 	return &inmemService{
-		m:        map[string][]interface{}{},
+		m:        map[string](map[string]string){},
 		ghClient: ghClient,
 	}
 }
 
-func (s *inmemService) GetWatchedRepos(ctx context.Context, username string) ([]github.Repository, error) {
+func (s *inmemService) GetWatchedRepos(ctx context.Context, username string) ([]RepoInformation, error) {
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
 
-	opt := &github.ListOptions{PerPage: 20}
+	opt := &github.ListOptions{PerPage: 30}
 
-	var allRepos []github.Repository
+	var allRepos []RepoInformation
 
 	for {
-		repos, resp, err := s.ghClient.Activity.ListWatched(ctx, "", opt)
+
+		repos, resp, err := s.ghClient.Activity.ListWatched(ctx, username, opt)
 
 		if err != nil {
-			return []github.Repository{}, err
+			return []RepoInformation{}, err
 		}
 
 		for _, element := range repos {
-			allRepos = append(allRepos, *element)
+			allRepos = append(allRepos, RepoInformation{FullName: *element.FullName})
 		}
 
 		if resp.NextPage == 0 {
@@ -72,23 +76,27 @@ func (s *inmemService) GetWatchedRepos(ctx context.Context, username string) ([]
 
 }
 
-func (s *inmemService) GetMyWatchedRepos(ctx context.Context) ([]interface{}, error) {
+func (s *inmemService) GetMyStarredRepos(ctx context.Context) ([]RepoInformation, error) {
+	return s.GetStarredRepos(ctx, "")
+}
+
+func (s *inmemService) GetStarredRepos(ctx context.Context, username string) ([]RepoInformation, error) {
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
 
-	opt := &github.ListOptions{PerPage: 20}
+	opt := &github.ActivityListStarredOptions{}
 
-	var allRepos []interface{}
+	var allRepos []RepoInformation
 
 	for {
-		repos, resp, err := s.ghClient.Activity.ListWatched(ctx, "", opt)
+		repos, resp, err := s.ghClient.Activity.ListStarred(ctx, username, opt)
 
 		if err != nil {
-			return []interface{}{}, err
+			return []RepoInformation{}, err
 		}
 
 		for _, element := range repos {
-			allRepos = append(allRepos, *element.FullName)
+			allRepos = append(allRepos, RepoInformation{FullName: *element.Repository.FullName})
 		}
 
 		if resp.NextPage == 0 {
@@ -99,6 +107,10 @@ func (s *inmemService) GetMyWatchedRepos(ctx context.Context) ([]interface{}, er
 
 	return allRepos, nil
 
+}
+
+func (s *inmemService) GetMyWatchedRepos(ctx context.Context) ([]RepoInformation, error) {
+	return s.GetWatchedRepos(ctx, "")
 }
 
 //func (s *inmemService) PostProfile(ctx context.Context, p Profile) error {
