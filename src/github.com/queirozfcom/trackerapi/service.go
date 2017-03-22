@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sync"
 	"github.com/google/go-github/github"
+	"fmt"
 )
 
 // Service is a simple CRUD interface for user profiles.
@@ -67,10 +68,14 @@ func (s *inmemService) GetWatchedRepos(ctx context.Context, username string) ([]
 		}
 
 		if resp.NextPage == 0 {
+			fmt.Println(resp.Response.Header.Get("X-Ratelimit-Remaining"))
+
 			break
 		}
 		opt.Page = resp.NextPage
+
 	}
+
 
 	return allRepos, nil
 
@@ -100,6 +105,8 @@ func (s *inmemService) GetStarredRepos(ctx context.Context, username string) ([]
 		}
 
 		if resp.NextPage == 0 {
+			fmt.Println(resp.Response.Header.Get("X-Ratelimit-Remaining"))
+
 			break
 		}
 		opt.Page = resp.NextPage

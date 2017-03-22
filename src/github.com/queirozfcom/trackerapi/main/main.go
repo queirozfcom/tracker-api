@@ -38,7 +38,7 @@ func main() {
 	// Memory caching.
 	transport = &httpcache.Transport{
 		Transport:           transport,
-		Cache:               lrucache.New(100000000, 21000),
+		Cache:               lrucache.New(100000000, 3600),
 		MarkCachedResponses: true,
 	}
 
