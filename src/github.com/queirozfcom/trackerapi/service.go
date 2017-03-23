@@ -51,7 +51,7 @@ func (s *inmemService) GetWatchedRepos(ctx context.Context, username string) ([]
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
 
-	opt := &github.ListOptions{PerPage: 30}
+	opt := &github.ListOptions{PerPage: 10}
 
 	var allRepos []RepoInformation
 

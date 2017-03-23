@@ -38,13 +38,16 @@ func main() {
 	// Memory caching.
 	transport = &httpcache.Transport{
 		Transport:           transport,
-		Cache:               lrucache.New(100000000, 3600),
+		Cache:               lrucache.New(10000000, 3600),
 		MarkCachedResponses: true,
 	}
 
 	httpClient := &http.Client{Transport: transport}
 
 	githubClient := github.NewClient(httpClient)
+
+
+
 
 	var logger log.Logger
 	{
