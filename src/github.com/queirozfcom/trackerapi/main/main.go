@@ -17,6 +17,8 @@ import (
 
 func main() {
 
+
+
 	var transport http.RoundTripper
 
 	var (
@@ -30,6 +32,7 @@ func main() {
 		panic("need a github token")
 	}
 
+
 	// GitHub API authentication.
 	transport = &oauth2.Transport{
 		Source: oauth2.StaticTokenSource(&oauth2.Token{AccessToken: tok, TokenType: "Basic"}),
@@ -42,11 +45,14 @@ func main() {
 		MarkCachedResponses: true,
 	}
 
+	// adding max-stale header to all requests to reduce the amount of requests
+	transport = &trackerapi.MyTransport{
+		Transport:           transport,
+		MaxStale: 1800, // half an hour
+	}
+
 	httpClient := &http.Client{Transport: transport}
-
 	githubClient := github.NewClient(httpClient)
-
-
 
 
 	var logger log.Logger
